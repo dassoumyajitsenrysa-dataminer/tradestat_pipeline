@@ -10,6 +10,10 @@ import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime, timedelta
 import json
+from chart_styles import (
+    style_bar_chart, style_line_chart, style_area_chart,
+    EXPORT_COLOR, IMPORT_COLOR, COLORS, CATEGORY_COLORS
+)
 
 # Configure dashboard
 st.set_page_config(
@@ -411,7 +415,7 @@ def page_home():
         
         with col1:
             trade_data = {
-                'Trade Mode': ['🚀 EXPORTS (Made in India)', '📦 IMPORTS (Imported to India)'],
+                'Trade Mode': ['🚀 EXPORTS', '📦 IMPORTS'],
                 'Records': [export_count, import_count],
                 'Percentage': [export_pct, 100-export_pct]
             }
@@ -421,17 +425,22 @@ def page_home():
                 trade_df,
                 x='Trade Mode',
                 y='Records',
-                title='India Trade Data Volume',
+                title='📊 India Trade Data Volume',
                 labels={'Records': 'Number of Records'},
                 color='Trade Mode',
                 color_discrete_map={
-                    '🚀 EXPORTS (Made in India)': '#00CC96',
-                    '📦 IMPORTS (Imported to India)': '#636EFA'
+                    '🚀 EXPORTS': EXPORT_COLOR,
+                    '📦 IMPORTS': IMPORT_COLOR
                 },
                 text='Records'
             )
-            fig_trade.update_traces(textposition='outside')
-            fig_trade.update_layout(template="plotly_white", height=400, showlegend=False)
+            fig_trade.update_traces(
+                textposition='outside',
+                textfont={"size": 14, "color": "#2c3e50"},
+                marker=dict(line=dict(width=1.5, color="white"))
+            )
+            fig_trade = style_bar_chart(fig_trade, title='📊 India Trade Data Volume', title_color=COLORS["primary"])
+            fig_trade.update_layout(height=400, showlegend=False)
             st.plotly_chart(fig_trade, use_container_width=True)
         
         with col2:
@@ -439,13 +448,24 @@ def page_home():
                 trade_df,
                 names='Trade Mode',
                 values='Records',
-                title="Trade Split",
+                title="📈 Trade Split (%)",
                 color_discrete_map={
-                    '🚀 EXPORTS (Made in India)': '#00CC96',
-                    '📦 IMPORTS (Imported to India)': '#636EFA'
+                    '🚀 EXPORTS': EXPORT_COLOR,
+                    '📦 IMPORTS': IMPORT_COLOR
                 }
             )
-            fig_pie.update_layout(template="plotly_white", height=400)
+            fig_pie.update_traces(
+                textposition='inside',
+                textinfo='label+percent',
+                hovertemplate="<b>%{label}</b><br>Records: %{value}<br>Percentage: %{percent}<extra></extra>",
+                marker=dict(line=dict(width=2, color="white"))
+            )
+            fig_pie.update_layout(
+                height=400,
+                font={"family": "Arial", "size": 12, "color": "#2c3e50"},
+                title={"font": {"size": 16, "color": COLORS["primary"], "family": "Arial Black"}, "x": 0.5, "xanchor": "center"},
+                paper_bgcolor="#ffffff"
+            )
             st.plotly_chart(fig_pie, use_container_width=True)
         
         with col3:
@@ -474,25 +494,30 @@ def page_home():
                 go.Indicator(
                     mode="gauge+number+delta",
                     value=completeness,
-                    title={'text': "Data Completeness %"},
+                    title={'text': "Data Completeness %", "font": {"size": 16, "color": COLORS["primary"]}},
                     delta={'reference': 80},
+                    number={"font": {"size": 40, "color": COLORS["primary"]}},
                     gauge={
-                        'axis': {'range': [0, 100]},
-                        'bar': {'color': "#0066cc"},
+                        'axis': {'range': [0, 100], 'tickwidth': 1.5, 'tickcolor': "#999'},
+                        'bar': {'color': COLORS["primary"], 'thickness': 0.7},
                         'steps': [
-                            {'range': [0, 50], 'color': "#ffcccc"},
-                            {'range': [50, 80], 'color': "#ffffcc"},
-                            {'range': [80, 100], 'color': "#ccffcc"}
+                            {'range': [0, 50], 'color': "#ffebee"},
+                            {'range': [50, 80], 'color': "#fff9c4"},
+                            {'range': [80, 100], 'color': "#e8f5e9"}
                         ],
                         'threshold': {
-                            'line': {'color': "red", 'width': 4},
+                            'line': {'color': COLORS["danger"], 'width': 2},
                             'thickness': 0.75,
                             'value': 90
                         }
                     }
                 )
             ])
-            fig_gauge.update_layout(height=350)
+            fig_gauge.update_layout(
+                height=350,
+                paper_bgcolor="#ffffff",
+                font={"family": "Arial", "color": "#2c3e50"}
+            )
             st.plotly_chart(fig_gauge, use_container_width=True)
         
         with col2:
