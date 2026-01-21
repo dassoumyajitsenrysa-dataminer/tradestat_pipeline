@@ -34,13 +34,26 @@ import os
 from pymongo import MongoClient
 
 # MongoDB connection (for direct access)
+# Try to get MONGO_URI from Streamlit Secrets first (for Streamlit Cloud)
+# Then fall back to environment variables (for local dev)
+# Then fall back to localhost (for local dev without env vars)
 try:
-    MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+    # First try Streamlit Secrets (for Streamlit Cloud)
+    MONGO_URI = st.secrets.get("MONGO_URI", None)
+    
+    # If not in Streamlit Secrets, try environment variables
+    if not MONGO_URI:
+        MONGO_URI = os.getenv("MONGO_URI", None)
+    
+    # If still not found, use localhost default
+    if not MONGO_URI:
+        MONGO_URI = "mongodb://localhost:27017"
+    
     mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=2000)
     mongo_client.server_info()  # Test connection
     db = mongo_client["tradestat"]
     MONGO_AVAILABLE = True
-except:
+except Exception as e:
     MONGO_AVAILABLE = False
     db = None
 
