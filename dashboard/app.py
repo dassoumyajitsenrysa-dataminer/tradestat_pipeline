@@ -137,7 +137,8 @@ def get_statistics():
                 "total_hs_codes": total_codes,
                 "export_codes": export_count,
                 "import_codes": import_count,
-                "data_date": "2026-01-21"
+                "data_date": "2026-01-21",
+                "avg_data_completeness": 100.0
             }
         else:
             # Fallback if MongoDB unavailable
@@ -145,11 +146,12 @@ def get_statistics():
                 "total_hs_codes": 13,
                 "export_codes": 12,
                 "import_codes": 1,
-                "data_date": "2026-01-21"
+                "data_date": "2026-01-21",
+                "avg_data_completeness": 100.0
             }
     except Exception as e:
         st.warning(f"Could not fetch live statistics: {str(e)}")
-        return {"total_hs_codes": 13, "export_codes": 12, "import_codes": 1, "data_date": "2026-01-21"}
+        return {"total_hs_codes": 13, "export_codes": 12, "import_codes": 1, "data_date": "2026-01-21", "avg_data_completeness": 100.0}
 
 
 @st.cache_data(ttl=300)
