@@ -498,12 +498,12 @@ def page_home():
                     delta={'reference': 80},
                     number={"font": {"size": 40, "color": COLORS["primary"]}},
                     gauge={
-                        'axis': {'range': [0, 100], 'tickwidth': 1.5, 'tickcolor': "#999'},
+                        'axis': {'range': [0, 100], 'tickwidth': 1.5, 'tickcolor': '#999'},
                         'bar': {'color': COLORS["primary"], 'thickness': 0.7},
                         'steps': [
-                            {'range': [0, 50], 'color': "#ffebee"},
-                            {'range': [50, 80], 'color': "#fff9c4"},
-                            {'range': [80, 100], 'color': "#e8f5e9"}
+                            {'range': [0, 50], 'color': '#ffebee'},
+                            {'range': [50, 80], 'color': '#fff9c4'},
+                            {'range': [80, 100], 'color': '#e8f5e9'}
                         ],
                         'threshold': {
                             'line': {'color': COLORS["danger"], 'width': 2},
