@@ -129,7 +129,7 @@ st.markdown("""
 def get_statistics():
     """Fetch statistics from MongoDB"""
     try:
-        if MONGO_AVAILABLE and db:
+        if MONGO_AVAILABLE:
             hs_codes_col = db["hs_codes"]
             total_codes = hs_codes_col.count_documents({})
             export_count = hs_codes_col.count_documents({"trade_type": "EXPORT"})
@@ -158,7 +158,7 @@ def get_statistics():
 def get_hs_codes(trade_mode=None, limit=100, skip=0):
     """Fetch HS codes from MongoDB"""
     try:
-        if MONGO_AVAILABLE and db:
+        if MONGO_AVAILABLE:
             hs_codes_col = db["hs_codes"]
             query = {}
             if trade_mode:
@@ -188,7 +188,7 @@ def get_hs_codes(trade_mode=None, limit=100, skip=0):
 def get_hs_code_detail(hs_code, trade_mode=None):
     """Fetch detailed data for a specific HS code from MongoDB"""
     try:
-        if MONGO_AVAILABLE and db:
+        if MONGO_AVAILABLE:
             hs_codes_col = db["hs_codes"]
             query = {"hs_code": hs_code}
             if trade_mode:
@@ -235,7 +235,7 @@ def get_hs_code_detail(hs_code, trade_mode=None):
 def search_hs_codes(hs_code=None, trade_mode=None, min_completeness=0):
     """Search HS codes with filters using MongoDB"""
     try:
-        if MONGO_AVAILABLE and db:
+        if MONGO_AVAILABLE:
             hs_codes_col = db["hs_codes"]
             query = {}
             
@@ -274,7 +274,7 @@ def search_hs_codes(hs_code=None, trade_mode=None, min_completeness=0):
 def compare_hs_codes(codes, trade_mode=None):
     """Compare multiple HS codes using MongoDB"""
     try:
-        if MONGO_AVAILABLE and db:
+        if MONGO_AVAILABLE:
             hs_codes_col = db["hs_codes"]
             query = {"hs_code": {"$in": codes}}
             
