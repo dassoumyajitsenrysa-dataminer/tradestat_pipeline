@@ -363,10 +363,20 @@ def compare_hs_codes(codes, trade_mode=None):
 # ==================== HOME PAGE ====================
 
 def page_home():
-    """Home page with overview and KPIs"""
-    st.markdown("# 📊 India Trade Statistics Dashboard")
-    st.markdown("#### Real-time monitoring of India's Export & Import data by HS Code")
-    st.markdown("**Reporting Country: 🇮🇳 India** | Data Updated: 2026-01-21")
+    """Home page with comprehensive analytics overview"""
+    
+    # Premium header
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%); padding: 30px; border-radius: 10px; margin-bottom: 20px;">
+        <h1 style="color: white; margin: 0; font-size: 36px;">📊 India Trade Analytics Dashboard</h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">
+        Real-time Intelligence Platform for India's Export & Import Data
+        </p>
+        <p style="color: rgba(255,255,255,0.8); margin: 5px 0 0 0; font-size: 12px;">
+        🇮🇳 Ministry of Commerce & Industry | Last Updated: 2026-01-22
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
     
     st.divider()
     
@@ -1382,7 +1392,7 @@ def page_hs_growth_analysis(hs_code, metadata, years_data, trade_mode):
     st.divider()
     
     # World Map - Geographic Distribution
-    st.markdown('<div class="section-header">🌍 Geographic Trade Distribution</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">🌍 Global Trade Distribution - Interactive Map</div>', unsafe_allow_html=True)
     
     if years_data:
         latest_year = sorted(years_data.keys())[-1]
@@ -1390,86 +1400,203 @@ def page_hs_growth_analysis(hs_code, metadata, years_data, trade_mode):
         all_partners = latest_data.get("partner_countries", [])
         
         if all_partners:
-            # Country coordinates mapping
-            country_coords = {
-                'UNITED STATES': (37.0902, -95.7129),
-                'CHINA': (35.8617, 104.1954),
-                'JAPAN': (36.2048, 138.2529),
-                'GERMANY': (51.1657, 10.4515),
-                'UNITED KINGDOM': (55.3781, -3.4360),
-                'FRANCE': (46.2276, 2.2137),
-                'INDIA': (20.5937, 78.9629),
-                'SOUTH KOREA': (35.9078, 127.7669),
-                'ITALY': (41.8719, 12.5674),
-                'SPAIN': (40.4637, -3.7492),
-                'CANADA': (56.1304, -106.3468),
-                'MEXICO': (23.6345, -102.5528),
-                'BRAZIL': (-14.2350, -51.9253),
-                'AUSTRALIA': (-25.2744, 133.7751),
-                'SINGAPORE': (1.3521, 103.8198),
-                'HONG KONG': (22.3193, 114.1694),
-                'UAE': (23.4241, 53.8478),
-                'SAUDI ARABIA': (23.8859, 45.0792),
-                'TURKEY': (38.9637, 35.2433),
-                'THAILAND': (15.8700, 100.9925),
-                'MALAYSIA': (4.2105, 101.6964),
-                'INDONESIA': (-0.7893, 113.9213),
-                'PHILIPPINES': (12.8797, 121.7740),
-                'VIETNAM': (14.0583, 108.2772),
-                'RUSSIA': (61.5240, 105.3188),
-                'POLAND': (51.9194, 19.1451),
-                'NETHERLANDS': (52.1326, 5.2913),
-                'BELGIUM': (50.5039, 4.4699),
-                'SWITZERLAND': (46.8182, 8.2275),
-                'SWEDEN': (60.1282, 18.6435),
-                'EGYPT': (26.8206, 30.8025),
-                'ARGENTINA': (-38.4161, -63.6167),
-                'NEW ZEALAND': (-40.9006, 174.8860),
+            # Country name to ISO-3 code mapping
+            country_iso_mapping = {
+                'UNITED STATES': 'USA',
+                'CHINA': 'CHN',
+                'JAPAN': 'JPN',
+                'GERMANY': 'DEU',
+                'UNITED KINGDOM': 'GBR',
+                'FRANCE': 'FRA',
+                'INDIA': 'IND',
+                'SOUTH KOREA': 'KOR',
+                'ITALY': 'ITA',
+                'SPAIN': 'ESP',
+                'CANADA': 'CAN',
+                'MEXICO': 'MEX',
+                'BRAZIL': 'BRA',
+                'AUSTRALIA': 'AUS',
+                'SINGAPORE': 'SGP',
+                'HONG KONG': 'HKG',
+                'UAE': 'ARE',
+                'SAUDI ARABIA': 'SAU',
+                'TURKEY': 'TUR',
+                'THAILAND': 'THA',
+                'MALAYSIA': 'MYS',
+                'INDONESIA': 'IDN',
+                'PHILIPPINES': 'PHL',
+                'VIETNAM': 'VNM',
+                'RUSSIA': 'RUS',
+                'POLAND': 'POL',
+                'NETHERLANDS': 'NLD',
+                'BELGIUM': 'BEL',
+                'SWITZERLAND': 'CHE',
+                'SWEDEN': 'SWE',
+                'EGYPT': 'EGY',
+                'ARGENTINA': 'ARG',
+                'NEW ZEALAND': 'NZL',
+                'ISRAEL': 'ISR',
+                'PAKISTAN': 'PAK',
+                'BANGLADESH': 'BGD',
+                'IRAQ': 'IRQ',
+                'KUWAIT': 'KWT',
+                'QATAR': 'QAT',
+                'OMAN': 'OMN',
+                'COLOMBIA': 'COL',
+                'CHILE': 'CHL',
+                'PERU': 'PER',
+                'ETHIOPIA': 'ETH',
+                'NIGERIA': 'NGA',
+                'SOUTH AFRICA': 'ZAF',
+                'MOROCCO': 'MAR',
+                'GREECE': 'GRC',
+                'AUSTRIA': 'AUT',
+                'DENMARK': 'DNK',
+                'FINLAND': 'FIN',
+                'NORWAY': 'NOR',
+                'ROMANIA': 'ROU',
+                'CZECHIA': 'CZE',
+                'HUNGARY': 'HUN',
+                'UKRAINE': 'UKR',
+                'SLOVENIA': 'SVN',
+                'PORTUGAL': 'PRT',
+                'IRELAND': 'IRL',
+                'LUXEMBOURG': 'LUX',
+                'CROATIA': 'HRV',
+                'BULGARIA': 'BGR',
+                'SERBIA': 'SRB',
+                'LATVIA': 'LVA',
+                'LITHUANIA': 'LTU',
+                'ESTONIA': 'EST',
+                'CZECH REPUBLIC': 'CZE',
+                'KOREA': 'KOR',
+                'TAIWAN': 'TWN',
+                'THAILAND': 'THA',
+                'ENGLAND': 'GBR',
+                'SCOTLAND': 'GBR',
+                'WALES': 'GBR',
+                'NORTHERN IRELAND': 'GBR',
             }
             
-            # Prepare scatter data
-            scatter_data = []
+            # Prepare choropleth data
+            choropleth_data = []
             for partner in all_partners:
                 country = (partner.get("Country") or partner.get("country", "")).upper()
                 value = float(partner.get(latest_year) or 0)
+                iso_code = country_iso_mapping.get(country)
                 
-                coords = country_coords.get(country)
-                if coords and value > 0:
-                    scatter_data.append({
+                if iso_code and value > 0:
+                    choropleth_data.append({
                         "Country": country,
-                        "Lat": coords[0],
-                        "Lon": coords[1],
+                        "ISO": iso_code,
                         "Value": value
                     })
             
-            if scatter_data:
-                scatter_df = pd.DataFrame(scatter_data)
+            if choropleth_data:
+                choropleth_df = pd.DataFrame(choropleth_data)
                 
-                # Create scatter geo map
-                fig_geo = px.scatter_geo(
-                    scatter_df,
-                    lat="Lat",
-                    lon="Lon",
-                    size="Value",
+                # Create choropleth map
+                fig_choropleth = px.choropleth(
+                    choropleth_df,
+                    locations="ISO",
+                    z="Value",
                     hover_name="Country",
-                    hover_data={"Value": ":.2f", "Lat": False, "Lon": False},
-                    title=f"Global Trade Partners - {hs_code} ({latest_year})",
-                    size_max=50,
-                    color="Value",
+                    hover_data={"Value": ":.2f", "ISO": False},
                     color_continuous_scale="Viridis",
-                    projection="natural earth"
+                    title=f"Global Trade Partners Distribution - HS Code {hs_code} ({latest_year})",
+                    labels={"Value": "Trade Value (Million USD)"},
+                    color_continuous_midpoint=choropleth_df["Value"].median()
                 )
-                fig_geo.update_layout(
-                    height=600,
-                    showlegend=True,
-                    geo=dict(
-                        showland=True,
-                        landcolor="rgb(243, 243, 243)",
-                        showocean=True,
-                        oceancolor="rgb(204, 229, 255)"
+                
+                fig_choropleth.update_geos(
+                    showland=True,
+                    landcolor="rgb(243, 243, 243)",
+                    showocean=True,
+                    oceancolor="rgb(204, 229, 255)",
+                    coastcolor="rgb(150, 150, 150)",
+                    projection_type="natural earth"
+                )
+                
+                fig_choropleth.update_layout(
+                    height=750,
+                    font=dict(family="Arial", size=12),
+                    title_font_size=16,
+                    coloraxis_colorbar=dict(
+                        title="Trade Value<br>(Million USD)",
+                        thickness=15,
+                        len=0.7
                     )
                 )
-                st.plotly_chart(fig_geo, use_container_width=True)
+                
+                st.plotly_chart(fig_choropleth, use_container_width=True)
+                
+                st.markdown("""
+                <div class="metric-card" style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-left: 4px solid #0066cc;">
+                    <h4 style="margin: 0 0 10px 0; color: #0066cc;">🌍 Map Guide</h4>
+                    <p style="font-size: 12px; margin: 5px 0;">
+                        <strong>Color Intensity:</strong> Darker/Yellow = Higher trade value | Lighter/Green = Lower trade value<br>
+                        <strong>Interactive Features:</strong> Hover over countries to see exact trade values<br>
+                        <strong>Data Representation:</strong> Based on latest available year (%s)<br>
+                        <strong>Coverage:</strong> Shows all active trading partner countries with value > 0
+                    </p>
+                </div>
+                """ % latest_year, unsafe_allow_html=True)
+            
+            # Top countries by trade value
+            st.markdown("### 🏆 Top 15 Trading Partners by Trade Value")
+            
+            top_partners = sorted(
+                [{"Country": p.get("Country") or p.get("country"), "Value": float(p.get(latest_year) or 0)} 
+                 for p in all_partners if float(p.get(latest_year) or 0) > 0],
+                key=lambda x: x["Value"],
+                reverse=True
+            )[:15]
+            
+            if top_partners:
+                top_df = pd.DataFrame(top_partners)
+                total_top = top_df["Value"].sum()
+                top_df["Share %"] = (top_df["Value"] / total_top * 100).round(2)
+                
+                col1, col2 = st.columns([2, 1])
+                
+                with col1:
+                    # Horizontal bar with percentages
+                    fig_top = px.bar(
+                        top_df,
+                        y="Country",
+                        x="Value",
+                        orientation="h",
+                        title=f"Top 15 Trading Partners - HS Code {hs_code} ({latest_year})",
+                        color="Value",
+                        color_continuous_scale="Blues",
+                        text="Share %",
+                        labels={"Value": "Trade Value (Million USD)"}
+                    )
+                    fig_top.update_traces(texttemplate="<b>%{text:.1f}%</b>", textposition="inside")
+                    fig_top.update_xaxes(autorange="reversed")
+                    fig_top.update_layout(template="plotly_white", height=600, showlegend=False)
+                    st.plotly_chart(fig_top, use_container_width=True)
+                
+                with col2:
+                    # Pie chart of top partners
+                    fig_pie = px.pie(
+                        top_df,
+                        names="Country",
+                        values="Value",
+                        title=f"Market Share<br>Top 15 Partners",
+                        color_discrete_sequence=px.colors.qualitative.Set3
+                    )
+                    fig_pie.update_layout(height=600)
+                    st.plotly_chart(fig_pie, use_container_width=True)
+                
+                # Detailed table
+                st.markdown("#### 📋 Detailed Rankings")
+                display_top = top_df.copy()
+                display_top["Rank"] = range(1, len(display_top) + 1)
+                display_top["Value"] = display_top["Value"].apply(lambda x: f"${x:,.1f}M")
+                display_top["Share %"] = display_top["Share %"].apply(lambda x: f"{x:.2f}%")
+                display_top = display_top[["Rank", "Country", "Value", "Share %"]]
+                st.dataframe(display_top, use_container_width=True, hide_index=True)
     
     st.divider()
     
