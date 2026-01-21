@@ -1,44 +1,16 @@
-# Trade Statistics Platform - Dependencies
-# Updated for Python 3.13 compatibility
+# Trade Statistics Dashboard - Core Dependencies
 
-# Web Framework & API
-fastapi>=0.100.0
-uvicorn>=0.24.0
-python-multipart>=0.0.6
+# Core Dashboard
+streamlit==1.28.1
+plotly==5.17.0
+pandas>=2.0.0
+numpy>=1.24.0
 
 # Database
 pymongo>=4.5.0
 
-# Data Validation & Serialization
-pydantic>=2.0.0
+# HTTP & API
+requests>=2.31.0
 
-# Frontend & Visualization
-streamlit==1.28.0
-plotly==5.17.0
-pandas==2.1.0
-numpy==1.24.3
-
-# HTTP Requests
-requests==2.31.0
-httpx==0.25.0
-
-# Web Scraping (for scraper module)
-playwright==1.40.0
-async-timeout==4.0.3
-
-# Scheduling
-APScheduler==3.10.4
-
-# Logging & Utilities
-python-dotenv==1.0.0
-python-json-logger==2.0.7
-
-# Development (optional)
-pytest==7.4.3
-pytest-asyncio==0.21.1
-black==23.11.0
-flake8==6.1.0
-mypy==1.7.1
-
-# Production Server (optional)
-gunicorn==21.2.0
+# Utilities
+python-dotenv>=1.0.0
