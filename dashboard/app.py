@@ -23,8 +23,6 @@ st.set_page_config(
 import os
 from pymongo import MongoClient
 
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
-
 # MongoDB connection (for direct access)
 try:
     MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
@@ -511,7 +509,7 @@ def page_home():
         st.caption(f"Last updated: {stats.get('last_scrape_time', 'N/A')} | Dashboard for India's Trade Ministry Data")
     
     else:
-        st.warning("Unable to fetch statistics. Is the API running on localhost:8000?")
+        st.warning("Unable to fetch statistics. Please ensure MongoDB is connected.")
 
 
 # ==================== HS CODE DETAILS PAGE ====================
@@ -1533,23 +1531,17 @@ def page_settings():
     
     st.markdown("### API Configuration")
     
+    # Show database connection status
     col1, col2 = st.columns(2)
     
     with col1:
-        st.info(f"**API Base URL**: {API_BASE_URL}")
+        if MONGO_AVAILABLE:
+            st.success("✅ MongoDB Connected")
+        else:
+            st.warning("⚠️ Using Fallback Data (MongoDB not available)")
     
     with col2:
-        if st.button("🔄 Check API Health"):
-            try:
-                response = requests.get(f"{API_BASE_URL}/health", timeout=5)
-                if response.status_code == 200:
-                    st.success("✅ API is healthy and responding")
-                    health_data = response.json()
-                    st.json(health_data)
-                else:
-                    st.error(f"❌ API returned status code: {response.status_code}")
-            except Exception as e:
-                st.error(f"❌ Failed to connect to API: {str(e)}")
+        st.info("📊 Dashboard uses direct MongoDB connection")
     
     st.divider()
     
