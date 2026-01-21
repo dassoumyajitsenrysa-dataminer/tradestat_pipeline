@@ -937,7 +937,14 @@ def page_hs_overview(hs_code, metadata, years_data, trade_mode):
         st.warning("No data available for this HS code")
         return
     
-    st.markdown("### 📊 Commodity Profile & Performance Metrics")
+    # Premium header styling
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%); 
+                padding: 25px; border-radius: 10px; margin-bottom: 20px;">
+        <h2 style="color: white; margin: 0; font-size: 28px;">📊 Commodity Profile & Performance Analysis</h2>
+        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Complete metrics, trends, and market insights</p>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Prepare data
     year_keys = sorted(list(years_data.keys()))
@@ -962,28 +969,42 @@ def page_hs_overview(hs_code, metadata, years_data, trade_mode):
     top_share = get_top_countries_share(partners_list, limit=5)
     growth_dist = analyze_growth_distribution(partners_list) if partners_list else {}
     
-    # Display KPI Cards (5 columns)
-    col1, col2, col3, col4, col5 = st.columns(5)
+    # Display Enhanced KPI Cards (5 large cards with better styling)
+    st.markdown("### 🎯 Key Performance Indicators")
+    col1, col2, col3, col4, col5 = st.columns(5, gap="medium")
     
-    with col1:
-        st.metric("📈 YoY Growth", f"{growth_metrics.get('yoy_growth', 0):+.1f}%", "Last year change")
+    # Helper function to create styled KPI cards
+    def create_kpi_card(col, icon, title, value, subtitle, color):
+        with col:
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, {color} 0%, {color}dd 100%); 
+                        padding: 20px; border-radius: 12px; text-align: center; 
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <div style="font-size: 28px; margin-bottom: 8px;">{icon}</div>
+                <div style="color: rgba(0,0,0,0.6); font-size: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">{title}</div>
+                <div style="color: white; font-size: 32px; font-weight: bold; margin-bottom: 5px;">{value}</div>
+                <div style="color: rgba(255,255,255,0.85); font-size: 11px;">{subtitle}</div>
+            </div>
+            """, unsafe_allow_html=True)
     
-    with col2:
-        st.metric("📊 CAGR", f"{growth_metrics.get('cagr', 0):.1f}%", "7-year compound")
+    # Create all KPI cards
+    yoy_val = f"{growth_metrics.get('yoy_growth', 0):+.1f}%"
+    cagr_val = f"{growth_metrics.get('cagr', 0):.1f}%"
+    trend_val = trend
+    volatility_val = f"{volatility:.1f}%"
+    top5_val = f"{top_share:.1f}%"
     
-    with col3:
-        st.metric("🎯 Trend", trend, "Current direction")
+    create_kpi_card(col1, "📈", "YoY Growth", yoy_val, "Last year change", "#FF6B6B")
+    create_kpi_card(col2, "📊", "CAGR", cagr_val, "7-year compound growth", "#0066CC")
+    create_kpi_card(col3, "🎯", "Trend", trend_val, "Current direction", "#00A86B")
+    create_kpi_card(col4, "🔀", "Volatility", volatility_val, "Trade stability", "#FFA500")
+    create_kpi_card(col5, "🏆", "Top-5 Share", top5_val, "Market concentration", "#9B59B6")
     
-    with col4:
-        st.metric("🔀 Volatility", f"{volatility:.1f}%", "Stability metric")
-    
-    with col5:
-        st.metric("🏆 Top-5 Share", f"{top_share:.1f}%", "Market concentration")
-    
+    st.markdown("")  # spacing
     st.divider()
     
     # Chart Section 1: Trend and Growth
-    st.markdown("### 📈 Trade Performance Analytics")
+    st.markdown('<div style="background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%); padding: 15px; border-radius: 8px; margin-bottom: 15px;"><h3 style="color: white; margin: 0;">📈 Trade Performance Analytics</h3></div>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     
@@ -1007,8 +1028,15 @@ def page_hs_overview(hs_code, metadata, years_data, trade_mode):
             fig_trend.update_traces(
                 fill='tozeroy',
                 fillcolor='rgba(0, 102, 204, 0.2)',
-                line=dict(color=EXPORT_COLOR, width=3),
-                marker=dict(size=8, color=EXPORT_COLOR)
+                line=dict(color='#0066CC', width=4),
+                marker=dict(size=10, color='#0066CC', symbol='circle')
+            )
+            fig_trend.update_layout(
+                height=450,
+                hovermode='x unified',
+                title_font_size=16,
+                xaxis_title_font_size=13,
+                yaxis_title_font_size=13
             )
             st.plotly_chart(fig_trend, use_container_width=True)
     
@@ -1033,18 +1061,27 @@ def page_hs_overview(hs_code, metadata, years_data, trade_mode):
                     df_yoy,
                     x='Year',
                     y='Growth Rate (%)',
-                    title='Year-over-Year Growth Rate',
+                    title='Year-over-Year Growth Rate (%)',
                     text='Growth Rate (%)',
                     color='Growth Rate (%)',
-                    color_continuous_scale=['#ff6b6b', '#ffffff', '#00a86b']
+                    color_continuous_scale=['#FF6B6B', '#FFFFFF', '#00A86B']
                 )
-                fig_yoy = style_bar_chart(fig_yoy, "YoY Growth Rates")
-                fig_yoy.update_traces(textposition='outside', texttemplate='%{text:.1f}%')
+                fig_yoy.update_traces(textposition='outside', texttemplate='%{text:.1f}%', marker_line_width=0)
+                fig_yoy.update_layout(
+                    height=450,
+                    hovermode='x unified',
+                    title_font_size=16,
+                    xaxis_title_font_size=13,
+                    yaxis_title_font_size=13,
+                    coloraxis_colorbar=dict(title="Growth %", titleside="right")
+                )
                 st.plotly_chart(fig_yoy, use_container_width=True)
     
     st.divider()
     
     # Chart Section 2: Partners and Concentration
+    st.markdown('<div style="background: linear-gradient(135deg, #00A86B 0%, #00875F 100%); padding: 15px; border-radius: 8px; margin-bottom: 15px;"><h3 style="color: white; margin: 0;">🌍 Market Structure & Partner Analysis</h3></div>', unsafe_allow_html=True)
+    
     col1, col2 = st.columns(2)
     
     with col1:
@@ -1066,13 +1103,19 @@ def page_hs_overview(hs_code, metadata, years_data, trade_mode):
                 title='Top 10 Trading Partners (Latest Year)',
                 orientation='h'
             )
-            fig_partners.update_traces(marker_color=EXPORT_COLOR)
+            fig_partners.update_traces(marker=dict(color='#0066CC', line=dict(color='#003366', width=1)))
             fig_partners.update_layout(
                 yaxis={'categoryorder': 'total ascending'},
-                height=400,
+                height=420,
                 paper_bgcolor='#ffffff',
-                font={"family": "Arial", "color": "#2c3e50"}
+                font={"family": "Arial", "color": "#2c3e50", "size": 12},
+                title_font_size=15,
+                xaxis_title='Trade Value (Million USD)',
+                showlegend=False,
+                hovermode='closest',
+                margin=dict(l=150)
             )
+            fig_partners.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#E0E0E0')
             st.plotly_chart(fig_partners, use_container_width=True)
     
     with col2:
@@ -1082,29 +1125,53 @@ def page_hs_overview(hs_code, metadata, years_data, trade_mode):
         
         fig_concentration = go.Figure(data=[
             go.Indicator(
-                mode="gauge+number",
+                mode="gauge+number+delta",
                 value=concentration_score,
-                title={'text': "Market Concentration Index", "font": {"size": 14, "color": COLORS["primary"]}},
+                title={'text': "Market Concentration<br>Index", "font": {"size": 16, "color": "#0066CC"}},
+                delta={'reference': 50, 'suffix': " vs baseline"},
                 gauge={
-                    'axis': {'range': [0, 100]},
-                    'bar': {'color': COLORS["primary"]},
+                    'axis': {'range': [0, 100], 'tickfont': {'size': 12}},
+                    'bar': {'color': '#0066CC', 'thickness': 0.8},
                     'steps': [
-                        {'range': [0, 40], 'color': '#e8f5e9'},
-                        {'range': [40, 70], 'color': '#fff9c4'},
-                        {'range': [70, 100], 'color': '#ffebee'}
-                    ]
+                        {'range': [0, 33], 'color': '#E8F5E9'},
+                        {'range': [33, 67], 'color': '#FFF9C4'},
+                        {'range': [67, 100], 'color': '#FFEBEE'}
+                    ],
+                    'threshold': {
+                        'line': {'color': '#FF6B6B', 'width': 3},
+                        'thickness': 0.75,
+                        'value': 70
+                    }
                 }
             )
         ])
-        fig_concentration.update_layout(height=350, paper_bgcolor='#ffffff')
+        fig_concentration.update_layout(
+            height=420,
+            paper_bgcolor='#ffffff',
+            font={"family": "Arial", "color": "#2c3e50", "size": 12}
+        )
         st.plotly_chart(fig_concentration, use_container_width=True)
         
-        st.info(f"**Concentration Level**: {concentration_level}")
+        # Detailed info card
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #F0F7FF 0%, #E8F1FF 100%); 
+                    padding: 20px; border-radius: 10px; border-left: 5px solid #0066CC; 
+                    margin-top: 10px;">
+            <h4 style="color: #0066CC; margin-top: 0;">📊 Concentration Analysis</h4>
+            <p style="margin: 10px 0; font-size: 14px;"><strong>Level:</strong> {concentration_level}</p>
+            <p style="margin: 10px 0; font-size: 13px; color: #555;">
+                {'✅ Healthy diversification across partners' if concentration_score < 40 else 
+                 '⚠️ Moderate concentration - monitor top partners' if concentration_score < 70 else 
+                 '🔴 High concentration - consider market expansion'}
+            </p>
+            <p style="margin: 10px 0; font-size: 12px; color: #888;">Score: {concentration_score:.1f}/100</p>
+        </div>
+        """, unsafe_allow_html=True)
     
     st.divider()
     
     # Chart Section 3: Growth Distribution
-    st.markdown("### 📊 Market Dynamics Analysis")
+    st.markdown('<div style="background: linear-gradient(135deg, #9B59B6 0%, #7D3C98 100%); padding: 15px; border-radius: 8px; margin-bottom: 15px;"><h3 style="color: white; margin: 0;">📈 Market Dynamics & Partner Growth</h3></div>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     
@@ -1122,33 +1189,65 @@ def page_hs_overview(hs_code, metadata, years_data, trade_mode):
                 names='Category',
                 values='Count',
                 title='Partner Growth Distribution',
-                color_discrete_map={'Growing Partners': EXPORT_COLOR, 'Declining Partners': IMPORT_COLOR}
+                color_discrete_map={'Growing Partners': '#00A86B', 'Declining Partners': '#FF6B6B'},
+                hole=0.3
             )
             fig_growth_dist.update_traces(
                 textposition='inside',
-                textinfo='label+percent',
-                hovertemplate='<b>%{label}</b><br>Count: %{value}<extra></extra>'
+                textinfo='label+percent+value',
+                textfont=dict(size=13, color='white', family='Arial'),
+                hovertemplate='<b>%{label}</b><br>Count: %{value} partners<br>Share: %{percent}<extra></extra>'
             )
             fig_growth_dist.update_layout(
-                height=350,
+                height=420,
                 paper_bgcolor='#ffffff',
-                font={"family": "Arial", "color": "#2c3e50"}
+                font={"family": "Arial", "color": "#2c3e50", "size": 12},
+                title_font_size=15,
+                showlegend=True,
+                legend=dict(yanchor="middle", y=0.5, xanchor="left", x=1.05)
             )
             st.plotly_chart(fig_growth_dist, use_container_width=True)
     
     with col2:
-        # Growth metrics summary
-        st.markdown("#### 📊 Growth Distribution Metrics")
-        col_a, col_b, col_c = st.columns(3)
+        # Growth metrics summary cards
+        st.markdown('<h4 style="margin-bottom: 15px;">📊 Growth Distribution Metrics</h4>', unsafe_allow_html=True)
         
-        with col_a:
-            st.metric("Avg Growth", f"{growth_dist.get('avg_growth', 0):+.1f}%", "Across partners")
+        metrics_col1, metrics_col2, metrics_col3 = st.columns(3)
         
-        with col_b:
-            st.metric("Max Growth", f"{growth_dist.get('max_growth', 0):+.1f}%", "Best performer")
+        avg_growth = growth_dist.get('avg_growth', 0)
+        max_growth = growth_dist.get('max_growth', 0)
+        min_growth = growth_dist.get('min_growth', 0)
         
-        with col_c:
-            st.metric("Min Growth", f"{growth_dist.get('min_growth', 0):+.1f}%", "Worst performer")
+        def growth_metric_card(col, label, value, icon):
+            with col:
+                color = '#00A86B' if value >= 0 else '#FF6B6B'
+                st.markdown(f"""
+                <div style="background: white; border: 2px solid {color}; padding: 18px; 
+                            border-radius: 10px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                    <div style="font-size: 24px; margin-bottom: 8px;">{icon}</div>
+                    <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">{label}</div>
+                    <div style="font-size: 28px; font-weight: bold; color: {color};">{value:+.1f}%</div>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        growth_metric_card(metrics_col1, "Avg Growth", avg_growth, "📊")
+        growth_metric_card(metrics_col2, "Max Growth", max_growth, "📈")
+        growth_metric_card(metrics_col3, "Min Growth", min_growth, "📉")
+        
+        # Additional insights
+        st.markdown('<hr style="margin: 20px 0; border: none; border-top: 2px solid #E0E0E0;">', unsafe_allow_html=True)
+        st.markdown('<h4 style="margin-bottom: 12px;">💡 Key Insights</h4>', unsafe_allow_html=True)
+        
+        growing_pct = (growth_dist.get('positive_count', 0) / max(growth_dist.get('positive_count', 0) + growth_dist.get('negative_count', 0), 1)) * 100 if (growth_dist.get('positive_count', 0) + growth_dist.get('negative_count', 0)) > 0 else 0
+        
+        insight_text = f"""
+        • **{growing_pct:.0f}%** of trading partners show positive growth  
+        • Market average growth: **{avg_growth:+.1f}%**  
+        • Best performing partner: **{max_growth:+.1f}%** growth  
+        • Strategy: {'Expand to growing partners' if growing_pct > 60 else 'Diversify across stagnant markets'}
+        """
+        
+        st.markdown(insight_text)
 
 
 # ==================== COUNTRY DRILL-DOWN FUNCTION ====================
