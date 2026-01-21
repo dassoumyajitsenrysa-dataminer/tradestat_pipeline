@@ -10,9 +10,15 @@ import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime, timedelta
 import json
+import numpy as np
 from chart_styles import (
     style_bar_chart, style_line_chart, style_area_chart,
     EXPORT_COLOR, IMPORT_COLOR, COLORS, CATEGORY_COLORS
+)
+from analytics import (
+    calculate_growth_metrics, calculate_concentration, get_top_countries,
+    calculate_volatility, get_trend_direction, get_peak_value,
+    get_top_countries_share, analyze_growth_distribution
 )
 
 # Configure dashboard
@@ -572,15 +578,28 @@ def page_home():
 def page_hs_code_details():
     """Detailed view for a specific HS code with comprehensive analysis"""
     st.markdown("# 🔍 India Trade Analysis - Commodity Level Intelligence")
-    st.markdown("**Reporting Country: 🇮🇳 India** | Analyze India's Export & Import Performance")
+    st.markdown("**Reporting Country: 🇮🇳 India** | Deep-dive into India's Export & Import Performance by Product")
     
-    col1, col2, col3 = st.columns(3)
+    # Get list of available HS codes
+    all_codes = get_hs_codes()
+    default_code = "87038030"  # Motor cars - most popular
+    code_list = [c["hs_code"] for c in all_codes] if all_codes else [default_code]
+    
+    # Reorder to put default first
+    if default_code in code_list:
+        code_list.remove(default_code)
+        code_list.insert(0, default_code)
+    
+    # Input section with tabs
+    st.markdown("### 📋 Analysis Configuration")
+    col1, col2, col3, col4 = st.columns([2, 1.5, 1.5, 1])
     
     with col1:
-        hs_code = st.text_input(
-            "Enter HS Code",
-            placeholder="e.g., 61091000",
-            help="8-digit Harmonized System code"
+        hs_code = st.selectbox(
+            "Select HS Code",
+            options=code_list,
+            index=0,
+            help="8-digit Harmonized System code for the product"
         )
     
     with col2:
@@ -593,32 +612,37 @@ def page_hs_code_details():
     with col3:
         analysis_type = st.selectbox(
             "Analysis Type",
-            options=["Overview", "Country Drill-Down", "Growth Analysis"]
+            options=["📊 Overview", "🌍 Country Analysis", "📈 Growth Trends"]
         )
     
-    if hs_code:
-        # Convert trade mode
-        api_trade_mode = None if trade_mode == "Both" else trade_mode.lower()
-        data = get_hs_code_detail(hs_code, api_trade_mode)
+    with col4:
+        if st.button("🔍 Analyze", use_container_width=True, key="analyze_btn"):
+            st.session_state.analyze = True
+    
+    st.divider()
+    
+    # Fetch and display data
+    api_trade_mode = None if trade_mode == "Both" else trade_mode.lower()
+    data = get_hs_code_detail(hs_code, api_trade_mode)
+    
+    if data:
+        st.success(f"✅ Data Analysis for HS Code: {hs_code}")
         
-        if data:
-            st.success(f"✅ Data found for HS Code: {hs_code}")
-            
-            metadata = data.get("metadata", {})
-            years_data = data.get("data_by_year", {})
-            
-            if analysis_type == "Overview":
-                page_hs_overview(hs_code, metadata, years_data, trade_mode)
-            elif analysis_type == "Country Drill-Down":
-                page_hs_country_drilldown(hs_code, metadata, years_data, trade_mode)
-            elif analysis_type == "Growth Analysis":
-                page_hs_growth_analysis(hs_code, metadata, years_data, trade_mode)
+        metadata = data.get("metadata", {})
+        years_data = data.get("data_by_year", {})
         
-        else:
-            st.warning(f"No data found for HS Code: {hs_code}")
+        # Route to appropriate analysis
+        clean_analysis = analysis_type.split()[-1]  # Get last word after emoji
+        
+        if "Overview" in analysis_type:
+            page_hs_overview(hs_code, metadata, years_data, trade_mode)
+        elif "Country" in analysis_type:
+            page_hs_country_drilldown(hs_code, metadata, years_data, trade_mode)
+        elif "Growth" in analysis_type:
+            page_hs_growth_analysis(hs_code, metadata, years_data, trade_mode)
     
     else:
-        st.info("👉 Enter an HS Code to begin analysis")
+        st.info("👉 No data available for this HS Code. Please try another.")
 
 
 # ==================== SEARCH & FILTER PAGE ====================
@@ -884,270 +908,224 @@ def page_analytics():
 # ==================== HS CODE OVERVIEW FUNCTION ====================
 
 def page_hs_overview(hs_code, metadata, years_data, trade_mode):
-    """Comprehensive overview of HS code performance"""
-    
-    # Business KPIs
-    st.markdown('<div class="section-header">💼 India\'s Commodity Profile & Key Metrics</div>', unsafe_allow_html=True)
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    trade_mode_label = "🚀 EXPORTS" if trade_mode == "Export" else "📦 IMPORTS" if trade_mode == "Import" else "🔄 BOTH"
-    
-    with col1:
-        product = metadata.get("product_label", "N/A")
-        st.markdown(f"""
-        <div class="metric-card">
-            <div style="font-size: 11px; color: #666;">Product Category</div>
-            <div style="font-size: 14px; font-weight: bold; color: #0066cc; margin-top: 8px;">
-                {product[:30] if product != "N/A" else "N/A"}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        partners = metadata.get("unique_partner_countries", 0)
-        st.markdown(f"""
-        <div class="metric-card">
-            <div style="font-size: 11px; color: #666;">Trading Partners</div>
-            <div style="font-size: 14px; font-weight: bold; color: #00a86b; margin-top: 8px;">
-                {partners} Countries
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        years = metadata.get("number_of_years", 0)
-        st.markdown(f"""
-        <div class="metric-card">
-            <div style="font-size: 11px; color: #666;">Data Span</div>
-            <div style="font-size: 14px; font-weight: bold; color: #ff6b6b; margin-top: 8px;">
-                {years} Years
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col4:
-        st.markdown(f"""
-        <div class="metric-card">
-            <div style="font-size: 11px; color: #666;">Trade Direction</div>
-            <div style="font-size: 14px; font-weight: bold; color: #ffc107; margin-top: 8px;">
-                {trade_mode_label}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+    """Comprehensive overview of HS code with enhanced metrics and charts"""
     
     if not years_data:
-        st.warning("No detailed data available for this HS code")
+        st.warning("No data available for this HS code")
         return
     
-    st.divider()
+    st.markdown("### 📊 Commodity Profile & Performance Metrics")
     
-    # Performance Summary
-    st.markdown('<div class="section-header">📊 India\'s Trade Performance - 7-Year Summary</div>', unsafe_allow_html=True)
+    # Prepare data
+    year_keys = sorted(list(years_data.keys()))
+    latest_year = year_keys[-1] if year_keys else None
     
-    latest_year = sorted(years_data.keys())[-1]
-    oldest_year = sorted(years_data.keys())[0]
-    prev_year = sorted(years_data.keys())[-2] if len(years_data) >= 2 else oldest_year
+    # Get latest year data for partner analysis
+    latest_data = years_data.get(latest_year, {}) if latest_year else {}
+    partners_list = latest_data.get("partner_countries", [])
     
-    latest_data = years_data[latest_year]
-    prev_data = years_data[prev_year]
+    # Calculate trade values across all years
+    trade_values = []
+    for year_key in year_keys:
+        partners = years_data[year_key].get("partner_countries", [])
+        total_val = sum(float(p.get(year_key, 0) or 0) for p in partners)
+        trade_values.append(total_val)
     
-    latest_partners = latest_data.get("partner_countries", [])
-    latest_total = sum([float(p.get(latest_year) or 0) for p in latest_partners])
+    # Calculate metrics using analytics module
+    growth_metrics = calculate_growth_metrics(trade_values, year_keys) if trade_values else {}
+    concentration = calculate_concentration(trade_values) if trade_values else {}
+    volatility = calculate_volatility(trade_values)
+    trend = get_trend_direction(trade_values)
+    top_share = get_top_countries_share(partners_list, limit=5)
+    growth_dist = analyze_growth_distribution(partners_list) if partners_list else {}
     
-    prev_partners = prev_data.get("partner_countries", [])
-    prev_total = sum([float(p.get(prev_year) or 0) for p in prev_partners])
-    
-    oldest_partners = years_data[oldest_year].get("partner_countries", [])
-    oldest_total = sum([float(p.get(oldest_year) or 0) for p in oldest_partners])
-    
-    yoy_growth = ((latest_total - prev_total) / max(prev_total, 0.01)) * 100 if prev_total > 0 else 0
-    growth_pct = ((latest_total - oldest_total) / max(oldest_total, 0.01)) * 100 if oldest_total > 0 else 0
-    
-    years_count = len(years_data) - 1
-    if years_count > 0 and oldest_total > 0:
-        cagr = (((latest_total / oldest_total) ** (1/years_count)) - 1) * 100
-    else:
-        cagr = 0
-    
-    col1, col2, col3, col4 = st.columns(4)
+    # Display KPI Cards (5 columns)
+    col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
-        growth_indicator = "📈" if yoy_growth >= 0 else "📉"
-        color = "#00a86b" if yoy_growth >= 0 else "#ff6b6b"
-        st.markdown(f"""
-        <div class="metric-card">
-            <div style="font-size: 11px; color: #666;">{latest_year} Value</div>
-            <div style="font-size: 16px; font-weight: bold; color: #0066cc; margin-top: 8px;">
-                ${latest_total:,.1f}M
-            </div>
-            <div style="font-size: 11px; color: {color}; margin-top: 8px;">
-                {growth_indicator} YoY: {yoy_growth:+.1f}%
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.metric("📈 YoY Growth", f"{growth_metrics.get('yoy_growth', 0):+.1f}%", "Last year change")
     
     with col2:
-        st.markdown(f"""
-        <div class="metric-card">
-            <div style="font-size: 11px; color: #666;">Active Partners</div>
-            <div style="font-size: 16px; font-weight: bold; color: #00a86b; margin-top: 8px;">
-                {len(latest_partners)}
-            </div>
-            <div style="font-size: 11px; color: #666; margin-top: 8px;">
-                Countries
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.metric("📊 CAGR", f"{growth_metrics.get('cagr', 0):.1f}%", "7-year compound")
     
     with col3:
-        cagr_color = "#00a86b" if cagr >= 0 else "#ff6b6b"
-        st.markdown(f"""
-        <div class="metric-card">
-            <div style="font-size: 11px; color: #666;">CAGR (7-Yr)</div>
-            <div style="font-size: 16px; font-weight: bold; color: {cagr_color}; margin-top: 8px;">
-                {cagr:+.1f}%
-            </div>
-            <div style="font-size: 11px; color: #666; margin-top: 8px;">
-                Growth Rate
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.metric("🎯 Trend", trend, "Current direction")
     
     with col4:
-        total_growth_color = "#00a86b" if growth_pct >= 0 else "#ff6b6b"
-        st.markdown(f"""
-        <div class="metric-card">
-            <div style="font-size: 11px; color: #666;">7-Year Growth</div>
-            <div style="font-size: 16px; font-weight: bold; color: {total_growth_color}; margin-top: 8px;">
-                {growth_pct:+.1f}%
-            </div>
-            <div style="font-size: 11px; color: #666; margin-top: 8px;">
-                {oldest_year} to {latest_year}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.metric("🔀 Volatility", f"{volatility:.1f}%", "Stability metric")
+    
+    with col5:
+        st.metric("🏆 Top-5 Share", f"{top_share:.1f}%", "Market concentration")
     
     st.divider()
     
-    # Multi-chart analysis
-    st.markdown('<div class="section-header">📈 India\'s Trade Trends & Market Dynamics</div>', unsafe_allow_html=True)
+    # Chart Section 1: Trend and Growth
+    st.markdown("### 📈 Trade Performance Analytics")
     
-    # Prepare trend data
-    trend_data = []
-    for year in sorted(years_data.keys()):
-        year_detail = years_data[year]
-        partners = year_detail.get("partner_countries", [])
-        total_value = sum([float(p.get(year) or 0) for p in partners])
-        trend_data.append({"Year": year, "Trade Value (USD M)": total_value, "Partner Count": len(partners)})
+    col1, col2 = st.columns(2)
     
-    trend_df = pd.DataFrame(trend_data)
-    
-    # Create tabs for different views
-    tab1, tab2, tab3 = st.tabs(["📊 Value Trends", "🌍 Partners Trend", "📈 Growth Rate"])
-    
-    with tab1:
-        col1, col2 = st.columns([2, 1])
-        with col1:
+    with col1:
+        # Trade trend over time
+        if trade_values and year_keys:
+            df_trend = pd.DataFrame({
+                'Year': year_keys,
+                'Trade Value (Million USD)': trade_values
+            })
+            
             fig_trend = px.line(
-                trend_df,
-                x="Year",
-                y="Trade Value (USD M)",
+                df_trend,
+                x='Year',
+                y='Trade Value (Million USD)',
+                title='Trade Value Trend (7 Years)',
                 markers=True,
-                title=f"India's {trade_mode_label} Value - {hs_code}",
-                line_shape="spline"
+                line_shape='spline'
             )
-            fig_trend.update_traces(line=dict(color="#0066cc", width=3), marker=dict(size=10))
-            fig_trend.update_layout(template="plotly_white", hovermode="x unified", height=450)
+            fig_trend = style_line_chart(fig_trend, "Trade Value Trend")
+            fig_trend.update_traces(
+                fill='tozeroy',
+                fillcolor='rgba(0, 102, 204, 0.2)',
+                line=dict(color=EXPORT_COLOR, width=3),
+                marker=dict(size=8, color=EXPORT_COLOR)
+            )
             st.plotly_chart(fig_trend, use_container_width=True)
-        
-        with col2:
-            if len(trend_data) >= 2:
-                metrics_summary = f"""
-                **Summary Metrics**
+    
+    with col2:
+        # Year-over-year growth rates
+        if len(trade_values) > 1:
+            yoy_rates = []
+            yoy_years = []
+            for i in range(1, len(trade_values)):
+                if trade_values[i-1] != 0:
+                    growth = ((trade_values[i] - trade_values[i-1]) / abs(trade_values[i-1])) * 100
+                    yoy_rates.append(growth)
+                    yoy_years.append(year_keys[i])
+            
+            if yoy_rates:
+                df_yoy = pd.DataFrame({
+                    'Year': yoy_years,
+                    'Growth Rate (%)': yoy_rates
+                })
                 
-                - Latest: ${trend_data[-1]['Trade Value (USD M)']:,.1f}M
-                - Avg: ${sum([t['Trade Value (USD M)'] for t in trend_data])/len(trend_data):,.1f}M  
-                - Max: ${max([t['Trade Value (USD M)'] for t in trend_data]):,.1f}M
-                - Min: ${min([t['Trade Value (USD M)'] for t in trend_data]):,.1f}M
-                """
-                st.markdown(metrics_summary)
-    
-    with tab2:
-        fig_partners = px.area(
-            trend_df,
-            x="Year",
-            y="Partner Count",
-            title="India's Trading Partner Expansion"
-        )
-        fig_partners.update_layout(template="plotly_white", height=400, hovermode="x unified")
-        st.plotly_chart(fig_partners, use_container_width=True)
-    
-    with tab3:
-        trend_df["Growth %"] = trend_df["Trade Value (USD M)"].pct_change() * 100
-        
-        fig_growth = px.bar(
-            trend_df.dropna(),
-            x="Year",
-            y="Growth %",
-            color="Growth %",
-            color_continuous_scale=["#ff6b6b", "#ffc107", "#00a86b"],
-            title="Year-on-Year Growth Rate",
-            text="Growth %"
-        )
-        fig_growth.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
-        fig_growth.update_layout(template="plotly_white", height=400)
-        st.plotly_chart(fig_growth, use_container_width=True)
+                fig_yoy = px.bar(
+                    df_yoy,
+                    x='Year',
+                    y='Growth Rate (%)',
+                    title='Year-over-Year Growth Rate',
+                    text='Growth Rate (%)',
+                    color='Growth Rate (%)',
+                    color_continuous_scale=['#ff6b6b', '#ffffff', '#00a86b']
+                )
+                fig_yoy = style_bar_chart(fig_yoy, "YoY Growth Rates")
+                fig_yoy.update_traces(textposition='outside', texttemplate='%{text:.1f}%')
+                st.plotly_chart(fig_yoy, use_container_width=True)
     
     st.divider()
     
-    # Top 15 Partners
-    st.markdown('<div class="section-header">🏆 India\'s Top Trading Partners</div>', unsafe_allow_html=True)
+    # Chart Section 2: Partners and Concentration
+    col1, col2 = st.columns(2)
     
-    all_partners = latest_data.get("partner_countries", [])
-    
-    country_values = []
-    for partner in all_partners:
-        country = partner.get("Country") or partner.get("country", "Unknown")
-        value = float(partner.get(latest_year) or 0)
-        if value > 0:
-            country_values.append({"Country": country, "Value": value})
-    
-    country_values_sorted = sorted(country_values, key=lambda x: x["Value"], reverse=True)[:15]
-    
-    if country_values_sorted:
-        top_countries_df = pd.DataFrame(country_values_sorted)
-        total_all = sum([c["Value"] for c in country_values_sorted])
-        top_countries_df["Share %"] = (top_countries_df["Value"] / total_all * 100).round(2)
-        top_countries_df["Rank"] = range(1, len(top_countries_df) + 1)
-        
-        col1, col2 = st.columns([2, 1])
-        
-        with col1:
-            fig_bar = px.bar(
-                top_countries_df,
-                y="Country",
-                x="Value",
-                orientation="h",
-                title=f"Top 15 Partners - {latest_year}",
-                color="Value",
-                color_continuous_scale="Blues",
-                text="Share %"
+    with col1:
+        # Top 10 trading partners
+        top_partners = get_top_countries(partners_list, limit=10)
+        if top_partners:
+            partner_names = [p.get("Country", f"Partner") for p in top_partners]
+            partner_values = [float(p.get(latest_year, 0) or 0) for p in top_partners]
+            
+            df_partners = pd.DataFrame({
+                'Country': partner_names,
+                'Trade Value': partner_values
+            })
+            
+            fig_partners = px.barh(
+                df_partners,
+                x='Trade Value',
+                y='Country',
+                title='Top 10 Trading Partners (Latest Year)',
+                orientation='h'
             )
-            fig_bar.update_traces(texttemplate="<b>%{text:.1f}%</b>", textposition="inside")
-            fig_bar.update_xaxes(autorange="reversed")
-            fig_bar.update_layout(template="plotly_white", height=500)
-            st.plotly_chart(fig_bar, use_container_width=True)
-        
-        with col2:
-            fig_pie = px.pie(
-                top_countries_df,
-                names="Country",
-                values="Value",
-                title="Market Share Distribution"
+            fig_partners.update_traces(marker_color=EXPORT_COLOR)
+            fig_partners.update_layout(
+                yaxis={'categoryorder': 'total ascending'},
+                height=400,
+                paper_bgcolor='#ffffff',
+                font={"family": "Arial", "color": "#2c3e50"}
             )
-            fig_pie.update_layout(template="plotly_white", height=400)
-            st.plotly_chart(fig_pie, use_container_width=True)
+            st.plotly_chart(fig_partners, use_container_width=True)
+    
+    with col2:
+        # Market concentration gauge
+        concentration_level = concentration.get("concentration_level", "Unknown")
+        concentration_score = concentration.get("normalized_concentration", 0)
+        
+        fig_concentration = go.Figure(data=[
+            go.Indicator(
+                mode="gauge+number",
+                value=concentration_score,
+                title={'text': "Market Concentration Index", "font": {"size": 14, "color": COLORS["primary"]}},
+                gauge={
+                    'axis': {'range': [0, 100]},
+                    'bar': {'color': COLORS["primary"]},
+                    'steps': [
+                        {'range': [0, 40], 'color': '#e8f5e9'},
+                        {'range': [40, 70], 'color': '#fff9c4'},
+                        {'range': [70, 100], 'color': '#ffebee'}
+                    ]
+                }
+            )
+        ])
+        fig_concentration.update_layout(height=350, paper_bgcolor='#ffffff')
+        st.plotly_chart(fig_concentration, use_container_width=True)
+        
+        st.info(f"**Concentration Level**: {concentration_level}")
+    
+    st.divider()
+    
+    # Chart Section 3: Growth Distribution
+    st.markdown("### 📊 Market Dynamics Analysis")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Partner growth distribution pie chart
+        if growth_dist and growth_dist.get('positive_count', 0) + growth_dist.get('negative_count', 0) > 0:
+            growth_data = {
+                'Category': ['Growing Partners', 'Declining Partners'],
+                'Count': [growth_dist.get('positive_count', 0), growth_dist.get('negative_count', 0)]
+            }
+            
+            df_growth = pd.DataFrame(growth_data)
+            fig_growth_dist = px.pie(
+                df_growth,
+                names='Category',
+                values='Count',
+                title='Partner Growth Distribution',
+                color_discrete_map={'Growing Partners': EXPORT_COLOR, 'Declining Partners': IMPORT_COLOR}
+            )
+            fig_growth_dist.update_traces(
+                textposition='inside',
+                textinfo='label+percent',
+                hovertemplate='<b>%{label}</b><br>Count: %{value}<extra></extra>'
+            )
+            fig_growth_dist.update_layout(
+                height=350,
+                paper_bgcolor='#ffffff',
+                font={"family": "Arial", "color": "#2c3e50"}
+            )
+            st.plotly_chart(fig_growth_dist, use_container_width=True)
+    
+    with col2:
+        # Growth metrics summary
+        st.markdown("#### 📊 Growth Distribution Metrics")
+        col_a, col_b, col_c = st.columns(3)
+        
+        with col_a:
+            st.metric("Avg Growth", f"{growth_dist.get('avg_growth', 0):+.1f}%", "Across partners")
+        
+        with col_b:
+            st.metric("Max Growth", f"{growth_dist.get('max_growth', 0):+.1f}%", "Best performer")
+        
+        with col_c:
+            st.metric("Min Growth", f"{growth_dist.get('min_growth', 0):+.1f}%", "Worst performer")
 
 
 # ==================== COUNTRY DRILL-DOWN FUNCTION ====================
