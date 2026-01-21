@@ -197,33 +197,43 @@ def get_hs_code_detail(hs_code, trade_mode=None):
             result = hs_codes_col.find_one(query)
             if result:
                 result.pop("_id", None)  # Remove MongoDB ID
+                
+                # Extract metadata from data_by_year if not present
+                if "metadata" not in result and "data_by_year" in result:
+                    # Build metadata from first year's data
+                    years_data = result.get("data_by_year", {})
+                    first_year_key = list(years_data.keys())[0] if years_data else None
+                    
+                    if first_year_key:
+                        first_year_data = years_data[first_year_key]
+                        result["metadata"] = {
+                            "hs_code": result.get("hs_code"),
+                            "product_label": first_year_data.get("product_label", ""),
+                            "trade_type": result.get("trade_type", "EXPORT"),
+                            "completeness": 100.0
+                        }
+                    else:
+                        result["metadata"] = {
+                            "hs_code": result.get("hs_code"),
+                            "product_label": "",
+                            "trade_type": result.get("trade_type", "EXPORT"),
+                            "completeness": 0.0
+                        }
+                
                 return result
         
-        # Fallback sample data for demo/testing
+        # Fallback sample data
         sample_data = {
             "87038030": {
                 "hs_code": "87038030",
-                "product_label": "Spark-ignition internal combustion engine vehicles",
                 "trade_type": "EXPORT",
-                "export_value": 2450000000,
-                "import_value": 0,
-                "export_quantity": 850000,
-                "import_quantity": 0,
-                "years": [2019, 2020, 2021, 2022, 2023, 2024, 2025],
-                "export_values": [1800000000, 1950000000, 2100000000, 2350000000, 2450000000, 2600000000, 2750000000],
-                "import_values": [0, 0, 0, 0, 0, 0, 0]
-            },
-            "27090090": {
-                "hs_code": "27090090",
-                "product_label": "Petroleum oils, not crude",
-                "trade_type": "IMPORT",
-                "export_value": 0,
-                "import_value": 15600000000,
-                "export_quantity": 0,
-                "import_quantity": 8900000,
-                "years": [2019, 2020, 2021, 2022, 2023, 2024, 2025],
-                "export_values": [0, 0, 0, 0, 0, 0, 0],
-                "import_values": [12100000000, 11500000000, 13200000000, 14800000000, 15600000000, 16200000000, 17100000000]
+                "metadata": {
+                    "hs_code": "87038030",
+                    "product_label": "Spark-ignition vehicles",
+                    "trade_type": "EXPORT",
+                    "completeness": 100.0
+                },
+                "data_by_year": {}
             }
         }
         return sample_data.get(hs_code)
