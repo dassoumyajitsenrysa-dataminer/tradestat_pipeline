@@ -1059,7 +1059,7 @@ def page_hs_overview(hs_code, metadata, years_data, trade_mode):
                 'Trade Value': partner_values
             })
             
-            fig_partners = px.barh(
+            fig_partners = px.bar(
                 df_partners,
                 x='Trade Value',
                 y='Country',
